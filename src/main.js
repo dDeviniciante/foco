@@ -88,6 +88,7 @@ function createFloatingWindow() {
     maximizable: false,
     fullscreenable: false,
     alwaysOnTop: true,
+    minimizable: false,
     skipTaskbar: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -95,9 +96,13 @@ function createFloatingWindow() {
       nodeIntegration: false
     }
   });
+  floatingWindow.setAlwaysOnTop(true, 'screen-saver');
+  floatingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   floatingWindow.loadFile(path.join(__dirname, 'floating.html'));
   floatingWindow.setMaximizable(false);
   floatingWindow.setFullScreenable(false);
+  floatingWindow.on('show', () => floatingWindow?.setAlwaysOnTop(true, 'screen-saver'));
+  floatingWindow.on('blur', () => floatingWindow?.setAlwaysOnTop(true, 'screen-saver'));
   floatingWindow.on('closed', () => {
     floatingWindow = null;
     mainWindow?.webContents.send('floating:visibility', false);
