@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Foco</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell" id="appShell">
+      <header class="titlebar">
+        <div class="brand drag-region">
+          <span class="focus-dot" aria-hidden="true"></span>
+          <span>FOCO</span>
+        </div>
+        <div class="window-actions">
+          <button id="settingsButton" title="Opções" aria-label="Abrir opções">⚙</button>
+          <button id="minimizeButton" title="Minimizar" aria-label="Minimizar">−</button>
+          <button id="closeButton" title="Fechar" aria-label="Fechar">×</button>
+        </div>
+      </header>
+
+      <section class="timer-panel">
+        <div class="timer-row">
+          <button class="timer-display" id="timerButton" aria-label="Iniciar ou pausar">
+            <span id="timerText">30:00</span>
+          </button>
+          <button class="float-inline" id="floatModeButton" title="Tornar relógio flutuante" aria-label="Tornar relógio flutuante">↗</button>
+          <div class="timer-actions">
+            <button class="stop-action" id="stopButton" disabled>STOP</button>
+            <button class="primary-action" id="primaryButton">COMEÇAR</button>
+          </div>
+        </div>
+        <p class="intention" id="intentionText">Defina um tempo para o que importa agora.</p>
+      </section>
+
+      <section class="expanded" id="expandedPanel">
+        <div class="duration-picker" aria-label="Duração do foco">
+          <button data-minutes="25">25</button>
+          <button data-minutes="30" class="selected">30</button>
+          <button data-minutes="45">45</button>
+          <button data-minutes="60">60</button>
+          <label class="custom-time">
+            <input id="customMinutes" inputmode="numeric" maxlength="3" placeholder="—" aria-label="Minutos personalizados" />
+            <span>MIN</span>
+          </label>
+        </div>
+        <div class="daily-summary">
+          <div><span>HOJE</span><strong id="todayTotal">0 min</strong></div>
+          <div class="rule"></div>
+          <div><span>ONTEM</span><strong id="yesterdayTotal">0 min</strong></div>
+        </div>
+        <button class="report-toggle" id="reportButton">
+          <span>ATIVIDADES DE HOJE</span>
+          <strong>VER RELATÓRIO</strong>
+        </button>
+      </section>
+    </main>
+
+    <dialog id="intentionDialog">
+      <form method="dialog" id="intentionForm">
+        <span class="eyebrow">ANTES DE COMEÇAR</span>
+        <h1>O que você vai fazer?</h1>
+        <input id="intentionInput" maxlength="90" autocomplete="off" placeholder="Ex.: estudar matemática" required />
+        <div class="tag-section" id="tagSection" hidden>
+          <span class="tag-label">SUAS TAGS</span>
+          <div class="tag-list" id="tagList"></div>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" id="cancelIntention" class="text-button">CANCELAR</button>
+          <button value="default" id="confirmIntention" class="primary-action">COMEÇAR FOCO</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="reportDialog" class="report-dialog">
+      <div class="report-content">
+        <div class="report-heading">
+          <div>
+            <span class="eyebrow">TEMPO INVESTIDO</span>
+            <h1>Atividades de hoje</h1>
+          </div>
+          <button id="closeReport" aria-label="Fechar relatório">×</button>
+        </div>
+        <div class="report-list" id="reportList"></div>
+        <div class="report-total"><span>TOTAL DO DIA</span><strong id="reportTotal">0 min</strong></div>
+      </div>
+    </dialog>
+
+    <dialog id="settingsDialog" class="settings-dialog">
+      <div class="settings-content">
+        <div class="report-heading">
+          <div>
+            <span class="eyebrow">APARÊNCIA</span>
+            <h1>Opções</h1>
+          </div>
+          <button id="closeSettings" aria-label="Fechar opções">×</button>
+        </div>
+        <div class="setting-row">
+          <span>TEMA</span>
+          <button id="themeSetting" class="setting-value">CLARO</button>
+        </div>
+        <label class="setting-row" for="alwaysOnTopSetting">
+          <span>SEMPRE VISÍVEL</span>
+          <input id="alwaysOnTopSetting" type="checkbox" />
+        </label>
+        <label class="opacity-setting" for="opacityRange">
+          <span>FUNDO DO RELÓGIO FLUTUANTE</span>
+          <strong id="opacityValue">92%</strong>
+        </label>
+        <input class="opacity-range" id="opacityRange" type="range" min="0" max="100" step="5" value="92" />
+        <p class="setting-help">Somente o quadrado fica transparente. O conteúdo permanece nítido.</p>
+      </div>
+    </dialog>
+
+    <dialog id="finishedDialog" class="finished-dialog">
+      <form method="dialog">
+        <span class="ring-icon">◉</span>
+        <span class="eyebrow">TEMPO CONCLUÍDO</span>
+        <h1 id="finishedTitle">Você investiu 30 minutos.</h1>
+        <p id="finishedIntention"></p>
+        <button value="default" id="silenceButton" class="primary-action wide">PARAR ALARME</button>
+      </form>
+    </dialog>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

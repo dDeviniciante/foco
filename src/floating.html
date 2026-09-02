@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relógio de foco</title>
+    <link rel="stylesheet" href="floating.css" />
+  </head>
+  <body>
+    <main class="floating-shell" id="floatingShell">
+      <header>
+        <span class="header-spacer" aria-hidden="true"></span>
+        <span class="drag-handle" title="Arraste para mover" aria-label="Arraste para mover">
+          <span class="grip-dots" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i><i></i>
+          </span>
+        </span>
+        <div class="header-actions">
+          <button id="dockFloating" title="Voltar ao painel" aria-label="Voltar ao painel">↙</button>
+        </div>
+      </header>
+      <button class="floating-timer" id="floatingTimer">30:00</button>
+      <p id="floatingIntention">Aguardando uma sessão de foco.</p>
+      <span class="resize-zone resize-top" data-edge="top"></span>
+      <span class="resize-zone resize-right" data-edge="right"></span>
+      <span class="resize-zone resize-bottom" data-edge="bottom"></span>
+      <span class="resize-zone resize-left" data-edge="left"></span>
+      <span class="resize-zone resize-top-left" data-edge="top-left"></span>
+      <span class="resize-zone resize-top-right" data-edge="top-right"></span>
+      <span class="resize-zone resize-bottom-right" data-edge="bottom-right"></span>
+      <span class="resize-zone resize-bottom-left" data-edge="bottom-left"></span>
+    </main>
+    <script src="floating.js"></script>
+  </body>
+</html>
