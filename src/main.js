@@ -1,10 +1,12 @@
-const { app, BrowserWindow, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, desktopCapturer } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createEmptyState, normalizeState, pruneTotals } = require('./focus-store');
 
 let mainWindow;
 let floatingWindow;
+let adaptiveContrastTimer;
+let adaptiveContrastBusy = false;
 
 app.setName('Foco');
 app.setPath('userData', path.join(app.getPath('appData'), 'Foco-Jonatas'));
@@ -28,6 +30,51 @@ function writeState(state) {
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, JSON.stringify(next, null, 2));
   return next;
+}
+
+async function sampleFloatingBackground() {
+  if (adaptiveContrastBusy || !floatingWindow || floatingWindow.isDestroyed() || !floatingWindow.isVisible()) return;
+  adaptiveContrastBusy = true;
+  try {
+    const windowBounds = floatingWindow.getBounds();
+    const display = screen.getDisplayMatching(windowBounds);
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: {
+        width: Math.max(1, Math.round(display.size.width * display.scaleFactor)),
+        height: Math.max(1, Math.round(display.size.height * display.scaleFactor))
+      }
+    });
+    const source = sources.find(item => String(item.display_id) === String(display.id)) || sources[0];
+    if (!source || source.thumbnail.isEmpty()) return;
+    const imageSize = source.thumbnail.getSize();
+    const scaleX = imageSize.width / display.bounds.width;
+    const scaleY = imageSize.height / display.bounds.height;
+    const x = Math.max(0, Math.round((windowBounds.x - display.bounds.x) * scaleX));
+    const y = Math.max(0, Math.round((windowBounds.y - display.bounds.y) * scaleY));
+    const width = Math.max(1, Math.min(imageSize.width - x, Math.round(windowBounds.width * scaleX)));
+    const height = Math.max(1, Math.min(imageSize.height - y, Math.round(windowBounds.height * scaleY)));
+    if (x >= imageSize.width || y >= imageSize.height) return;
+    const pixel = source.thumbnail.crop({ x, y, width, height }).resize({ width: 1, height: 1 }).toBitmap();
+    const [blue, green, red] = pixel;
+    const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
+    floatingWindow.webContents.send('contrast:update', luminance < 145 ? 'light' : 'dark');
+  } catch {
+    // A captura pode falhar brevemente durante trocas de tela cheia ou monitor.
+  } finally {
+    adaptiveContrastBusy = false;
+  }
+}
+
+function updateAdaptiveContrast(enabled) {
+  clearInterval(adaptiveContrastTimer);
+  adaptiveContrastTimer = null;
+  if (!enabled) {
+    floatingWindow?.webContents.send('contrast:update', 'theme');
+    return;
+  }
+  sampleFloatingBackground();
+  adaptiveContrastTimer = setInterval(sampleFloatingBackground, 700);
 }
 
 function createWindow() {
@@ -104,6 +151,8 @@ function createFloatingWindow() {
   floatingWindow.on('show', () => floatingWindow?.setAlwaysOnTop(true, 'screen-saver'));
   floatingWindow.on('blur', () => floatingWindow?.setAlwaysOnTop(true, 'screen-saver'));
   floatingWindow.on('closed', () => {
+    clearInterval(adaptiveContrastTimer);
+    adaptiveContrastTimer = null;
     floatingWindow = null;
     mainWindow?.webContents.send('floating:visibility', false);
   });
@@ -211,6 +260,7 @@ ipcMain.handle('floating:step-size', (_event, direction) => {
   );
 });
 ipcMain.on('timer:broadcast', (_event, timerState) => {
+  updateAdaptiveContrast(timerState.adaptiveContrast === true);
   floatingWindow?.webContents.send('timer:state', timerState);
 });
 ipcMain.on('timer:command', (_event, command) => {

@@ -1,6 +1,6 @@
 {
   "name": "foco",
-  "version": "0.12.1",
+  "version": "0.13.0",
   "description": "Um cronometro de foco minimalista para Windows",
   "main": "src/main.js",
   "author": "Jonatas Lucas",

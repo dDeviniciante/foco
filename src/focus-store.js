@@ -22,6 +22,7 @@ function createEmptyState() {
     entries: [],
     tags: [],
     floatingOpacity: 0.92,
+    adaptiveContrast: false,
     session: null
   };
 }
@@ -36,6 +37,7 @@ function normalizeState(value) {
     entries: Array.isArray(value.entries) ? value.entries : [],
     tags: Array.isArray(value.tags) ? value.tags : [],
     floatingOpacity: Math.max(0, Math.min(1, Number.isFinite(Number(value.floatingOpacity)) ? Number(value.floatingOpacity) : 0.92)),
+    adaptiveContrast: value.adaptiveContrast === true,
     session: value.session && typeof value.session === 'object' ? value.session : null
   };
 }

@@ -18,5 +18,6 @@ contextBridge.exposeInMainWorld('focusAPI', {
   sendTimerCommand: (command) => ipcRenderer.send('timer:command', command),
   onTimerState: (callback) => ipcRenderer.on('timer:state', (_event, state) => callback(state)),
   onTimerCommand: (callback) => ipcRenderer.on('timer:command', (_event, command) => callback(command)),
-  onFloatingVisibility: (callback) => ipcRenderer.on('floating:visibility', (_event, visible) => callback(visible))
+  onFloatingVisibility: (callback) => ipcRenderer.on('floating:visibility', (_event, visible) => callback(visible)),
+  onAdaptiveContrast: (callback) => ipcRenderer.on('contrast:update', (_event, contrast) => callback(contrast))
 });
