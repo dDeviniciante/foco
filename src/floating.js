@@ -2,14 +2,11 @@ const timer = document.querySelector('#floatingTimer');
 const intention = document.querySelector('#floatingIntention');
 const shell = document.querySelector('#floatingShell');
 let finished = false;
-let adaptiveContrastEnabled = false;
 
 window.focusAPI.onTimerState(state => {
   timer.textContent = state.time;
   intention.textContent = state.intention || 'Aguardando uma sessão de foco.';
   document.documentElement.dataset.theme = state.theme;
-  adaptiveContrastEnabled = state.adaptiveContrast === true;
-  if (!adaptiveContrastEnabled) delete document.documentElement.dataset.adaptive;
   const rawOpacity = Number(state.backgroundOpacity);
   const opacity = Math.max(0, Math.min(1, Number.isFinite(rawOpacity) ? rawOpacity : .92));
   shell.style.backgroundColor = state.theme === 'dark'
@@ -23,11 +20,6 @@ window.focusAPI.onTimerState(state => {
   shell.classList.toggle('running', state.running);
   shell.classList.toggle('finished', state.finished);
   finished = state.finished;
-});
-
-window.focusAPI.onAdaptiveContrast(contrast => {
-  if (!adaptiveContrastEnabled || contrast === 'theme') delete document.documentElement.dataset.adaptive;
-  else document.documentElement.dataset.adaptive = contrast;
 });
 
 timer.addEventListener('click', () => window.focusAPI.sendTimerCommand(finished ? 'silence' : 'toggle'));

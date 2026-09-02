@@ -32,7 +32,7 @@ const els = {
   reportDialog: $('#reportDialog'), reportList: $('#reportList'), reportTotal: $('#reportTotal'),
   tagSection: $('#tagSection'), tagList: $('#tagList'), settingsDialog: $('#settingsDialog'),
   opacityRange: $('#opacityRange'), opacityValue: $('#opacityValue'), themeSetting: $('#themeSetting'),
-  alwaysOnTopSetting: $('#alwaysOnTopSetting'), adaptiveContrastSetting: $('#adaptiveContrastSetting')
+  alwaysOnTopSetting: $('#alwaysOnTopSetting')
 };
 
 let state;
@@ -77,7 +77,6 @@ function render() {
   els.stop.disabled = !state.session;
   els.themeSetting.textContent = state.theme === 'dark' ? 'ESCURO' : 'CLARO';
   els.alwaysOnTopSetting.checked = state.alwaysOnTop;
-  els.adaptiveContrastSetting.checked = state.adaptiveContrast === true;
   updateTotals();
   window.focusAPI.broadcastTimer({
     time: formatClock(remainingSeconds),
@@ -85,8 +84,7 @@ function render() {
     running,
     finished: Boolean(alarmHandle),
     theme: state.theme,
-    backgroundOpacity: state.floatingOpacity,
-    adaptiveContrast: state.adaptiveContrast === true
+    backgroundOpacity: state.floatingOpacity
   });
 }
 
@@ -377,7 +375,6 @@ $('#settingsButton').addEventListener('click', () => {
   els.opacityValue.textContent = `${percent}%`;
   els.themeSetting.textContent = state.theme === 'dark' ? 'ESCURO' : 'CLARO';
   els.alwaysOnTopSetting.checked = state.alwaysOnTop;
-  els.adaptiveContrastSetting.checked = state.adaptiveContrast === true;
   els.settingsDialog.showModal();
 });
 $('#closeSettings').addEventListener('click', () => els.settingsDialog.close());
@@ -404,11 +401,6 @@ els.themeSetting.addEventListener('click', async () => {
 els.alwaysOnTopSetting.addEventListener('change', async () => {
   state.alwaysOnTop = els.alwaysOnTopSetting.checked;
   await window.focusAPI.setAlwaysOnTop(state.alwaysOnTop);
-  await persist();
-  render();
-});
-els.adaptiveContrastSetting.addEventListener('change', async () => {
-  state.adaptiveContrast = els.adaptiveContrastSetting.checked;
   await persist();
   render();
 });
