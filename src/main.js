@@ -33,15 +33,17 @@ function writeState(state) {
 function createWindow() {
   const saved = readState();
   const workArea = screen.getPrimaryDisplay().workArea;
+  const defaultWidth = Math.min(520, workArea.width - 24);
+  const defaultHeight = Math.min(390, workArea.height - 24);
   mainWindow = new BrowserWindow({
-    width: 420,
-    height: 332,
-    minWidth: 320,
-    minHeight: 290,
-    maxWidth: 1200,
-    maxHeight: 900,
-    x: workArea.x + Math.max(0, workArea.width - 452),
-    y: workArea.y + 32,
+    width: defaultWidth,
+    height: defaultHeight,
+    minWidth: 420,
+    minHeight: 332,
+    maxWidth: Math.max(420, workArea.width - 24),
+    maxHeight: Math.max(332, workArea.height - 24),
+    x: workArea.x + Math.max(12, workArea.width - defaultWidth - 32),
+    y: workArea.y + Math.min(32, Math.max(12, workArea.height - defaultHeight)),
     frame: false,
     icon: path.join(__dirname, '..', 'build', 'icon.ico'),
     transparent: true,
@@ -127,6 +129,31 @@ ipcMain.handle('window:close', () => {
 ipcMain.handle('window:always-on-top', (_event, enabled) => {
   mainWindow?.setAlwaysOnTop(Boolean(enabled));
   return Boolean(enabled);
+});
+ipcMain.handle('window:resize-by', (_event, edge, dx, dy) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const bounds = mainWindow.getBounds();
+  const workArea = screen.getDisplayMatching(bounds).workArea;
+  const margin = 12;
+  const minWidth = 420;
+  const minHeight = 332;
+  let { x, y, width, height } = bounds;
+  const right = x + width;
+  const bottom = y + height;
+
+  if (edge.includes('right')) width = Math.max(minWidth, Math.min(workArea.x + workArea.width - margin - x, width + dx));
+  if (edge.includes('bottom')) height = Math.max(minHeight, Math.min(workArea.y + workArea.height - margin - y, height + dy));
+  if (edge.includes('left')) {
+    const nextX = Math.max(workArea.x + margin, Math.min(right - minWidth, x + dx));
+    x = nextX;
+    width = right - nextX;
+  }
+  if (edge.includes('top')) {
+    const nextY = Math.max(workArea.y + margin, Math.min(bottom - minHeight, y + dy));
+    y = nextY;
+    height = bottom - nextY;
+  }
+  mainWindow.setBounds({ x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) });
 });
 ipcMain.handle('window:compact', (_event, compact) => {
   if (!mainWindow) return;

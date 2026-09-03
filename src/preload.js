@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('focusAPI', {
   showMain: () => ipcRenderer.invoke('window:show-main'),
   close: () => ipcRenderer.invoke('window:close'),
   setAlwaysOnTop: (enabled) => ipcRenderer.invoke('window:always-on-top', enabled),
+  resizeMainBy: (edge, dx, dy) => ipcRenderer.invoke('window:resize-by', edge, dx, dy),
   setCompact: (compact) => ipcRenderer.invoke('window:compact', compact),
   toggleFloating: () => ipcRenderer.invoke('floating:toggle'),
   showFloating: () => ipcRenderer.invoke('floating:show'),

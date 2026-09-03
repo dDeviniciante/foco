@@ -39,6 +39,17 @@ html, body {
 button, input { font: inherit; }
 button { color: inherit; }
 
+.main-resize-zone { position: fixed; z-index: 1000; display: block; -webkit-app-region: no-drag; }
+.main-resize-zone.resize-top { top: 0; left: 12px; right: 12px; height: 7px; cursor: ns-resize; }
+.main-resize-zone.resize-right { top: 12px; right: 0; bottom: 12px; width: 7px; cursor: ew-resize; }
+.main-resize-zone.resize-bottom { right: 12px; bottom: 0; left: 12px; height: 7px; cursor: ns-resize; }
+.main-resize-zone.resize-left { top: 12px; bottom: 12px; left: 0; width: 7px; cursor: ew-resize; }
+.main-resize-zone.resize-top-left, .main-resize-zone.resize-top-right, .main-resize-zone.resize-bottom-right, .main-resize-zone.resize-bottom-left { width: 14px; height: 14px; }
+.main-resize-zone.resize-top-left { top: 0; left: 0; cursor: nwse-resize; }
+.main-resize-zone.resize-top-right { top: 0; right: 0; cursor: nesw-resize; }
+.main-resize-zone.resize-bottom-right { right: 0; bottom: 0; cursor: nwse-resize; }
+.main-resize-zone.resize-bottom-left { bottom: 0; left: 0; cursor: nesw-resize; }
+
 .app-shell {
   container-type: inline-size;
   position: relative;

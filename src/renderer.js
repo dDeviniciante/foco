@@ -507,6 +507,31 @@ window.focusAPI.onTimerCommand(command => {
   if (command === 'sync') render();
 });
 
+document.querySelectorAll('.main-resize-zone').forEach(zone => {
+  zone.addEventListener('pointerdown', event => {
+    event.preventDefault();
+    zone.setPointerCapture(event.pointerId);
+    let lastX = event.screenX;
+    let lastY = event.screenY;
+    const edge = zone.dataset.edge;
+    const resize = moveEvent => {
+      const dx = moveEvent.screenX - lastX;
+      const dy = moveEvent.screenY - lastY;
+      lastX = moveEvent.screenX;
+      lastY = moveEvent.screenY;
+      if (dx || dy) window.focusAPI.resizeMainBy(edge, dx, dy);
+    };
+    const finish = () => {
+      zone.removeEventListener('pointermove', resize);
+      zone.removeEventListener('pointerup', finish);
+      zone.removeEventListener('pointercancel', finish);
+    };
+    zone.addEventListener('pointermove', resize);
+    zone.addEventListener('pointerup', finish);
+    zone.addEventListener('pointercancel', finish);
+  });
+});
+
 (async function init() {
   state = await window.focusAPI.loadState();
   document.documentElement.dataset.theme = state.theme;
