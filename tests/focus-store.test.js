@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { addFocusedSeconds, addTaskSeconds, createEmptyState, localDayKey, normalizeTaskKey, taskReportForDay, totalsForDisplay, yesterdayKey } = require('../src/focus-store');
+const { addFocusedSeconds, addTaskSeconds, createEmptyState, localDayKey, normalizeState, normalizeTaskKey, taskReportForDay, totalsForDisplay, yesterdayKey } = require('../src/focus-store');
 
 test('creates local date keys without UTC conversion', () => {
   const date = new Date(2026, 8, 2, 23, 59);
@@ -37,4 +37,15 @@ test('groups today task entries by description', () => {
 
 test('normalizes accents, capitalization and extra spaces in task names', () => {
   assert.equal(normalizeTaskKey('  Estudar   Matemática! '), normalizeTaskKey('estudar matematica'));
+});
+
+test('keeps fixed tags and removes temporary tags from a previous day', () => {
+  const state = normalizeState({
+    fixedTags: ['Trabalho'],
+    temporaryTags: ['Tarefa de ontem'],
+    temporaryTagsDay: '2020-01-01'
+  });
+  assert.deepEqual(state.fixedTags, ['Trabalho']);
+  assert.deepEqual(state.temporaryTags, []);
+  assert.equal(state.temporaryTagsDay, localDayKey());
 });

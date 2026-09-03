@@ -210,14 +210,29 @@ dialog {
 }
 dialog::backdrop { background: rgba(14, 16, 15, .42); backdrop-filter: blur(2px); }
 dialog form { padding: 24px; }
+#intentionDialog form { max-height: calc(100vh - 24px); overflow-y: auto; }
 dialog h1 { margin: 8px 0 18px; font-family: Georgia, "Times New Roman", serif; font-size: 25px; font-weight: 400; }
 dialog input { width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 10px 2px; outline: 0; background: transparent; color: var(--ink); }
 dialog input:focus { border-color: var(--accent); }
 .tag-section { margin-top: 18px; }
-.tag-label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: .17em; }
+.tag-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.tag-label { display: block; color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: .17em; }
+.add-tag-button { border: 0; background: transparent; color: var(--accent); font-size: 8px; font-weight: 700; letter-spacing: .08em; cursor: pointer; }
+.add-tag-form { display: grid; grid-template-columns: 1fr 26px 26px; align-items: center; gap: 4px; margin: 2px 0 10px; }
+.add-tag-form[hidden] { display: none; }
+.add-tag-form input { min-width: 0; padding-block: 7px; font-size: 11px; }
+.add-tag-form button { width: 26px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+.add-tag-form button:first-of-type { color: var(--accent); }
 .tag-list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 92px; overflow-y: auto; }
 .tag-chip { max-width: 100%; padding: 6px 9px; overflow: hidden; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--surface) 86%, var(--accent-soft)); color: var(--ink); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .tag-chip:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.fixed-tag-chip { display: inline-flex; align-items: center; padding: 0 3px 0 9px; }
+.fixed-tag-chip .tag-select, .fixed-tag-chip .tag-remove { border: 0; padding: 6px 0; background: transparent; color: inherit; font-size: 10px; cursor: pointer; }
+.fixed-tag-chip .tag-select { max-width: 175px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fixed-tag-chip .tag-remove { width: 20px; margin-left: 4px; color: var(--muted); font-size: 14px; line-height: 1; }
+.fixed-tag-chip .tag-remove:hover { color: var(--danger); }
+.temporary-tag-group { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.temporary-tag-group .tag-label { margin-bottom: 8px; }
 .dialog-actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 22px; }
 .text-button { border: 0; background: transparent; color: var(--muted); font-size: 9px; letter-spacing: .1em; cursor: pointer; }
 .finished-dialog { text-align: center; }

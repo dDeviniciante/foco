@@ -62,9 +62,21 @@
         <span class="eyebrow">ANTES DE COMEÇAR</span>
         <h1>O que você vai fazer?</h1>
         <input id="intentionInput" maxlength="90" autocomplete="off" placeholder="Ex.: estudar matemática" required />
-        <div class="tag-section" id="tagSection" hidden>
-          <span class="tag-label">SUAS TAGS</span>
-          <div class="tag-list" id="tagList"></div>
+        <div class="tag-section" id="tagSection">
+          <div class="tag-heading">
+            <span class="tag-label">TAGS FIXAS</span>
+            <button type="button" id="showAddTag" class="add-tag-button">+ ADICIONAR TAG</button>
+          </div>
+          <div class="add-tag-form" id="addTagForm" hidden>
+            <input id="fixedTagInput" maxlength="50" autocomplete="off" placeholder="Nome da tag fixa" />
+            <button type="button" id="confirmAddTag" aria-label="Salvar tag">✓</button>
+            <button type="button" id="cancelAddTag" aria-label="Cancelar">×</button>
+          </div>
+          <div class="tag-list" id="fixedTagList"></div>
+          <div class="temporary-tag-group" id="temporaryTagGroup" hidden>
+            <span class="tag-label">TAGS TEMPORÁRIAS DE HOJE</span>
+            <div class="tag-list" id="temporaryTagList"></div>
+          </div>
         </div>
         <div class="dialog-actions">
           <button type="button" id="cancelIntention" class="text-button">CANCELAR</button>

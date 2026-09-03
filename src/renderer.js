@@ -30,7 +30,8 @@ const els = {
   finishedIntention: $('#finishedIntention'), silence: $('#silenceButton'),
   today: $('#todayTotal'), yesterday: $('#yesterdayTotal'), customMinutes: $('#customMinutes'),
   reportDialog: $('#reportDialog'), reportList: $('#reportList'), reportTotal: $('#reportTotal'),
-  tagSection: $('#tagSection'), tagList: $('#tagList'), settingsDialog: $('#settingsDialog'),
+  tagSection: $('#tagSection'), fixedTagList: $('#fixedTagList'), temporaryTagList: $('#temporaryTagList'),
+  temporaryTagGroup: $('#temporaryTagGroup'), addTagForm: $('#addTagForm'), fixedTagInput: $('#fixedTagInput'), settingsDialog: $('#settingsDialog'),
   opacityRange: $('#opacityRange'), opacityValue: $('#opacityValue'), themeSetting: $('#themeSetting'),
   alwaysOnTopSetting: $('#alwaysOnTopSetting')
 };
@@ -145,16 +146,48 @@ function startTicking() {
 
 function openIntentionDialog() {
   els.intentionInput.value = '';
+  els.addTagForm.hidden = true;
+  els.fixedTagInput.value = '';
   renderTags();
   els.dialog.showModal();
   setTimeout(() => els.intentionInput.focus(), 50);
 }
 
 function renderTags() {
-  els.tagList.replaceChildren();
-  const tags = Array.isArray(state.tags) ? state.tags : [];
-  els.tagSection.hidden = tags.length === 0;
-  for (const tag of tags) {
+  ensureTemporaryTagsToday();
+  els.fixedTagList.replaceChildren();
+  els.temporaryTagList.replaceChildren();
+  const fixedTags = Array.isArray(state.fixedTags) ? state.fixedTags : [];
+  const temporaryTags = Array.isArray(state.temporaryTags) ? state.temporaryTags : [];
+
+  for (const tag of fixedTags) {
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip fixed-tag-chip';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tag-select';
+    button.textContent = tag;
+    button.title = tag;
+    button.addEventListener('click', () => {
+      els.intentionInput.value = tag;
+      els.intentionInput.focus();
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'tag-remove';
+    remove.textContent = '×';
+    remove.title = `Excluir ${tag}`;
+    remove.setAttribute('aria-label', `Excluir tag ${tag}`);
+    remove.addEventListener('click', async () => {
+      state.fixedTags = state.fixedTags.filter(item => normalizeTaskKey(item) !== normalizeTaskKey(tag));
+      await persist();
+      renderTags();
+    });
+    chip.append(button, remove);
+    els.fixedTagList.append(chip);
+  }
+
+  for (const tag of temporaryTags) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'tag-chip';
@@ -164,17 +197,48 @@ function renderTags() {
       els.intentionInput.value = tag;
       els.intentionInput.focus();
     });
-    els.tagList.append(button);
+    els.temporaryTagList.append(button);
   }
+  els.temporaryTagGroup.hidden = temporaryTags.length === 0;
+}
+
+function currentDayKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+function ensureTemporaryTagsToday() {
+  const today = currentDayKey();
+  if (state.temporaryTagsDay === today) return;
+  state.temporaryTags = [];
+  state.temporaryTagsDay = today;
 }
 
 function rememberTag(intention) {
-  state.tags ??= [];
+  ensureTemporaryTagsToday();
+  state.fixedTags ??= [];
+  state.temporaryTags ??= [];
   const key = normalizeTaskKey(intention);
-  const existing = state.tags.find(tag => normalizeTaskKey(tag) === key);
+  const fixed = state.fixedTags.find(tag => normalizeTaskKey(tag) === key);
+  if (fixed) return fixed;
+  const existing = state.temporaryTags.find(tag => normalizeTaskKey(tag) === key);
   const canonical = existing || intention.trim();
-  state.tags = [canonical, ...state.tags.filter(tag => normalizeTaskKey(tag) !== key)].slice(0, 24);
+  state.temporaryTags = [canonical, ...state.temporaryTags.filter(tag => normalizeTaskKey(tag) !== key)].slice(0, 24);
   return canonical;
+}
+
+async function addFixedTag() {
+  const name = els.fixedTagInput.value.trim();
+  if (!name) return els.fixedTagInput.focus();
+  ensureTemporaryTagsToday();
+  const key = normalizeTaskKey(name);
+  const existing = state.fixedTags.find(tag => normalizeTaskKey(tag) === key);
+  state.fixedTags = [existing || name, ...state.fixedTags.filter(tag => normalizeTaskKey(tag) !== key)].slice(0, 40);
+  state.temporaryTags = state.temporaryTags.filter(tag => normalizeTaskKey(tag) !== key);
+  els.fixedTagInput.value = '';
+  els.addTagForm.hidden = true;
+  await persist();
+  renderTags();
 }
 
 async function beginSession(intention) {
@@ -366,6 +430,27 @@ els.intentionForm.addEventListener('submit', event => {
   beginSession(intention);
 });
 $('#cancelIntention').addEventListener('click', () => els.dialog.close());
+$('#showAddTag').addEventListener('click', () => {
+  els.addTagForm.hidden = false;
+  setTimeout(() => els.fixedTagInput.focus(), 0);
+});
+$('#confirmAddTag').addEventListener('click', addFixedTag);
+$('#cancelAddTag').addEventListener('click', () => {
+  els.fixedTagInput.value = '';
+  els.addTagForm.hidden = true;
+});
+els.fixedTagInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    addFixedTag();
+  }
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    els.fixedTagInput.value = '';
+    els.addTagForm.hidden = true;
+    els.intentionInput.focus();
+  }
+});
 $('#reportButton').addEventListener('click', showTodayReport);
 $('#closeReport').addEventListener('click', () => els.reportDialog.close());
 $('#settingsButton').addEventListener('click', () => {

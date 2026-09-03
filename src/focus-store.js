@@ -20,7 +20,9 @@ function createEmptyState() {
     alwaysOnTop: true,
     totals: {},
     entries: [],
-    tags: [],
+    fixedTags: [],
+    temporaryTags: [],
+    temporaryTagsDay: localDayKey(),
     floatingOpacity: 0.92,
     session: null
   };
@@ -34,7 +36,9 @@ function normalizeState(value) {
     alwaysOnTop: value.alwaysOnTop !== false,
     totals: value.totals && typeof value.totals === 'object' ? value.totals : {},
     entries: Array.isArray(value.entries) ? value.entries : [],
-    tags: Array.isArray(value.tags) ? value.tags : [],
+    fixedTags: Array.isArray(value.fixedTags) ? value.fixedTags : [],
+    temporaryTags: value.temporaryTagsDay === localDayKey() && Array.isArray(value.temporaryTags) ? value.temporaryTags : [],
+    temporaryTagsDay: localDayKey(),
     floatingOpacity: Math.max(0, Math.min(1, Number.isFinite(Number(value.floatingOpacity)) ? Number(value.floatingOpacity) : 0.92)),
     session: value.session && typeof value.session === 'object' ? value.session : null
   };
