@@ -85,7 +85,9 @@ function render() {
     running,
     finished: Boolean(alarmHandle),
     theme: state.theme,
-    backgroundOpacity: state.floatingOpacity
+    backgroundOpacity: state.floatingOpacity,
+    progress: durationSeconds > 0 ? Math.max(0, Math.min(1, remainingSeconds / durationSeconds)) : 0,
+    hasSession: Boolean(state.session)
   });
 }
 
@@ -474,6 +476,10 @@ $('#floatModeButton').addEventListener('click', async () => {
   await window.focusAPI.enterFloatingMode();
   setTimeout(render, 200);
 });
+$('#fullscreenModeButton').addEventListener('click', async () => {
+  await window.focusAPI.enterFullscreenMode();
+  setTimeout(render, 200);
+});
 els.silence.addEventListener('click', () => {
   acknowledgeFinishedSession();
 });
@@ -500,6 +506,7 @@ $('#closeButton').addEventListener('click', async () => {
 });
 window.focusAPI.onTimerCommand(command => {
   if (command === 'toggle') toggleTimer();
+  if (command === 'stop') stopSession();
   if (command === 'silence' && alarmHandle) {
     acknowledgeFinishedSession();
     window.focusAPI.dockFloating();

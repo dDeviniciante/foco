@@ -5,6 +5,8 @@ const { createEmptyState, normalizeState, pruneTotals } = require('./focus-store
 
 let mainWindow;
 let floatingWindow;
+let fullscreenWindow;
+let appQuitting = false;
 
 app.setName('Foco');
 app.setPath('userData', path.join(app.getPath('appData'), 'Foco-Jonatas'));
@@ -114,16 +116,68 @@ function createFloatingWindow() {
   return floatingWindow;
 }
 
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+  mainWindow?.show();
+  mainWindow?.focus();
+}
+
+function closeFullscreenWindow(showMain = true) {
+  if (fullscreenWindow && !fullscreenWindow.isDestroyed()) {
+    fullscreenWindow.removeAllListeners('closed');
+    fullscreenWindow.close();
+  }
+  fullscreenWindow = null;
+  if (showMain) showMainWindow();
+}
+
+function createFullscreenWindow() {
+  if (fullscreenWindow && !fullscreenWindow.isDestroyed()) {
+    fullscreenWindow.show();
+    fullscreenWindow.focus();
+    return fullscreenWindow;
+  }
+  const sourceBounds = mainWindow && !mainWindow.isDestroyed() ? mainWindow.getBounds() : screen.getPrimaryDisplay().bounds;
+  const displayBounds = screen.getDisplayMatching(sourceBounds).bounds;
+  fullscreenWindow = new BrowserWindow({
+    x: displayBounds.x,
+    y: displayBounds.y,
+    frame: false,
+    fullscreen: true,
+    show: false,
+    backgroundColor: '#171a18',
+    icon: path.join(__dirname, '..', 'build', 'icon.ico'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      backgroundThrottling: false
+    }
+  });
+  fullscreenWindow.loadFile(path.join(__dirname, 'fullscreen.html'));
+  fullscreenWindow.once('ready-to-show', () => {
+    fullscreenWindow?.setFullScreen(true);
+    fullscreenWindow?.show();
+    fullscreenWindow?.focus();
+  });
+  fullscreenWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.key === 'Escape' && input.type === 'keyDown') closeFullscreenWindow(true);
+  });
+  fullscreenWindow.on('closed', () => {
+    fullscreenWindow = null;
+    if (!appQuitting) showMainWindow();
+  });
+  return fullscreenWindow;
+}
+
 ipcMain.handle('state:load', () => readState());
 ipcMain.handle('state:save', (_event, state) => writeState(state));
 ipcMain.handle('window:minimize', () => mainWindow?.minimize());
 ipcMain.handle('window:show-main', () => {
-  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
-  mainWindow?.show();
-  mainWindow?.focus();
+  showMainWindow();
 });
 ipcMain.handle('window:close', () => {
-  if (floatingWindow && !floatingWindow.isDestroyed()) mainWindow?.hide();
+  if ((floatingWindow && !floatingWindow.isDestroyed()) || (fullscreenWindow && !fullscreenWindow.isDestroyed())) mainWindow?.hide();
   else mainWindow?.close();
 });
 ipcMain.handle('window:always-on-top', (_event, enabled) => {
@@ -192,6 +246,26 @@ ipcMain.handle('floating:close', () => {
   floatingWindow?.close();
   if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) mainWindow.show();
 });
+ipcMain.handle('fullscreen:enter', () => {
+  floatingWindow?.close();
+  createFullscreenWindow();
+  mainWindow?.hide();
+  return true;
+});
+ipcMain.handle('fullscreen:dock', () => {
+  closeFullscreenWindow(true);
+  return true;
+});
+ipcMain.handle('fullscreen:stop', () => {
+  mainWindow?.webContents.send('timer:command', 'stop');
+  closeFullscreenWindow(true);
+  return true;
+});
+ipcMain.handle('fullscreen:start-request', () => {
+  closeFullscreenWindow(true);
+  setTimeout(() => mainWindow?.webContents.send('timer:command', 'toggle'), 100);
+  return true;
+});
 ipcMain.handle('floating:bounds', () => floatingWindow?.getBounds());
 ipcMain.handle('floating:resize', (_event, width, height) => {
   if (!floatingWindow || floatingWindow.isDestroyed()) return;
@@ -241,6 +315,7 @@ ipcMain.handle('floating:step-size', (_event, direction) => {
 });
 ipcMain.on('timer:broadcast', (_event, timerState) => {
   floatingWindow?.webContents.send('timer:state', timerState);
+  fullscreenWindow?.webContents.send('timer:state', timerState);
 });
 ipcMain.on('timer:command', (_event, command) => {
   mainWindow?.webContents.send('timer:command', command);
@@ -251,6 +326,10 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+});
+
+app.on('before-quit', () => {
+  appQuitting = true;
 });
 
 app.on('window-all-closed', () => {

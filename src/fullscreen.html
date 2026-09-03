@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tela de foco</title>
+    <link rel="stylesheet" href="fullscreen.css" />
+  </head>
+  <body>
+    <main class="focus-screen" id="focusScreen">
+      <header>
+        <div class="brand"><span></span> FOCO</div>
+        <button id="dockFullscreen" title="Voltar à central" aria-label="Voltar à central">−</button>
+      </header>
+      <section class="focus-content">
+        <div class="progress-circle" id="progressCircle">
+          <div class="circle-inner">
+            <button class="fullscreen-timer" id="fullscreenTimer">30:00</button>
+            <p id="fullscreenIntention">Aguardando uma sessão de foco.</p>
+          </div>
+        </div>
+        <div class="focus-actions">
+          <button class="stop-button" id="fullscreenStop" disabled>STOP</button>
+          <button class="primary-button" id="fullscreenPrimary">COMEÇAR</button>
+        </div>
+      </section>
+    </main>
+    <script src="fullscreen.js"></script>
+  </body>
+</html>

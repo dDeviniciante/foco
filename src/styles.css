@@ -111,8 +111,9 @@ button { color: inherit; }
 .timer-panel { padding: 15px 18px 13px; }
 .timer-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .timer-actions { display: flex; align-items: center; gap: 6px; }
-.float-inline { flex: 0 0 auto; width: 29px; height: 29px; margin-left: auto; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 15px; cursor: pointer; }
-.float-inline:hover { background: var(--accent-soft); color: var(--accent); }
+.fullscreen-inline, .float-inline { flex: 0 0 auto; width: 29px; height: 29px; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 15px; cursor: pointer; }
+.fullscreen-inline { margin-left: auto; font-size: 23px; font-weight: 300; line-height: 1; }
+.fullscreen-inline:hover, .float-inline:hover { background: var(--accent-soft); color: var(--accent); }
 .timer-display {
   padding: 0;
   border: 0;
@@ -293,7 +294,8 @@ dialog input:focus { border-color: var(--accent); }
   .timer-panel { padding-inline: 14px; }
   .timer-row { display: grid; grid-template-columns: 1fr auto; }
   .timer-display { font-size: 29px; text-align: left; }
-  .float-inline { grid-column: 2; grid-row: 1; }
+  .fullscreen-inline { grid-column: 2; grid-row: 1; }
+  .float-inline { grid-column: 2; grid-row: 1; margin-right: 34px; }
   .timer-actions { grid-column: 1 / -1; justify-content: flex-end; }
 }
 
