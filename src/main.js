@@ -35,8 +35,8 @@ function writeState(state) {
 function createWindow() {
   const saved = readState();
   const workArea = screen.getPrimaryDisplay().workArea;
-  const defaultWidth = Math.min(520, workArea.width - 24);
-  const defaultHeight = Math.min(390, workArea.height - 24);
+  const defaultWidth = Math.min(980, workArea.width - 24);
+  const defaultHeight = Math.min(820, workArea.height - 24);
   mainWindow = new BrowserWindow({
     width: defaultWidth,
     height: defaultHeight,

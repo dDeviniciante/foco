@@ -25,16 +25,18 @@ const { addFocusedSeconds, normalizeTaskKey, totalsForDisplay } = (() => {
 const $ = (selector) => document.querySelector(selector);
 const els = {
   shell: $('#appShell'), timerText: $('#timerText'), timerButton: $('#timerButton'), primary: $('#primaryButton'), stop: $('#stopButton'),
-  intention: $('#intentionText'), expanded: $('#expandedPanel'), dialog: $('#intentionDialog'), intentionForm: $('#intentionForm'),
+  intention: $('#intentionText'), activeTaskLabel: $('#activeTaskLabel'), focusHeading: $('#focusHeading'), focusSubheading: $('#focusSubheading'), dialog: $('#intentionDialog'), intentionForm: $('#intentionForm'),
   intentionInput: $('#intentionInput'), finishedDialog: $('#finishedDialog'), finishedTitle: $('#finishedTitle'),
   finishedIntention: $('#finishedIntention'), silence: $('#silenceButton'),
-  today: $('#todayTotal'), yesterday: $('#yesterdayTotal'), customMinutes: $('#customMinutes'),
+  today: $('#todayTotal'), yesterday: $('#yesterdayTotal'), week: $('#weekTotal'), streak: $('#streakTotal'),
+  todayComparison: $('#todayComparison'), streakMessage: $('#streakMessage'), customMinutes: $('#customMinutes'),
   reportDialog: $('#reportDialog'), reportList: $('#reportList'), reportTotal: $('#reportTotal'),
   tagSection: $('#tagSection'), fixedTagList: $('#fixedTagList'), temporaryTagList: $('#temporaryTagList'),
   temporaryTagGroup: $('#temporaryTagGroup'), addTagForm: $('#addTagForm'), fixedTagInput: $('#fixedTagInput'), settingsDialog: $('#settingsDialog'),
   opacityRange: $('#opacityRange'), opacityValue: $('#opacityValue'), themeSetting: $('#themeSetting'),
-  alwaysOnTopSetting: $('#alwaysOnTopSetting'), todoForm: $('#todoForm'), todoInput: $('#todoInput'),
-  todoList: $('#todoList'), todoCount: $('#todoCount')
+  alwaysOnTopSetting: $('#alwaysOnTopSetting'), todoList: $('#todoList'), todoCount: $('#todoCount'),
+  taskDialog: $('#taskDialog'), taskForm: $('#taskForm'), taskDialogTitle: $('#taskDialogTitle'), taskIdInput: $('#taskIdInput'),
+  taskNameInput: $('#taskNameInput'), taskCategoryInput: $('#taskCategoryInput'), categorySuggestions: $('#categorySuggestions')
 };
 
 let state;
@@ -44,6 +46,9 @@ let running = false;
 let tickHandle;
 let audioContext;
 let alarmHandle;
+let selectedTodoId = null;
+let openTodoMenuId = null;
+let finishedIntentionName = '';
 
 function formatClock(seconds) {
   const safe = Math.max(0, Math.ceil(seconds));
@@ -70,17 +75,68 @@ function updateTotals() {
   const totals = totalsForDisplay(state, new Date());
   els.today.textContent = formatTotal(totals.today);
   els.yesterday.textContent = formatTotal(totals.yesterday);
+  const difference = totals.today - totals.yesterday;
+  els.todayComparison.textContent = difference > 0 ? `↑ ${formatTotal(difference)} a mais que ontem` : difference < 0 ? `${formatTotal(Math.abs(difference))} abaixo de ontem` : totals.today ? 'Mesmo ritmo de ontem' : 'Comece seu primeiro foco';
+  els.week.textContent = formatTotal(weekSeconds());
+  const streak = focusStreak();
+  els.streak.textContent = `${streak} ${streak === 1 ? 'dia' : 'dias'}`;
+  els.streakMessage.textContent = streak ? 'Continue assim!' : 'Um dia de cada vez';
+}
+
+function weekSeconds() {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  let total = 0;
+  for (let date = new Date(monday); date <= today; date.setDate(date.getDate() + 1)) total += Math.max(0, Number(state.totals?.[dayKey(date)]) || 0);
+  return total;
+}
+
+function focusStreak() {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  if (!(Number(state.totals?.[dayKey(date)]) > 0)) date.setDate(date.getDate() - 1);
+  let count = 0;
+  while (Number(state.totals?.[dayKey(date)]) > 0) {
+    count += 1;
+    date.setDate(date.getDate() - 1);
+  }
+  return count;
+}
+
+function dayKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function todoSecondsToday(todo) {
+  const key = normalizeTaskKey(todo.text);
+  const recorded = (state.entries || []).reduce((total, entry) => {
+    if (entry.day !== dayKey()) return total;
+    const matchesId = entry.taskId && entry.taskId === todo.id;
+    const matchesLegacy = !entry.taskId && normalizeTaskKey(entry.task) === key;
+    return total + (matchesId || matchesLegacy ? Math.max(0, Number(entry.seconds) || 0) : 0);
+  }, 0);
+  const matchesActive = state.session && (state.session.taskId === todo.id || (!state.session.taskId && normalizeTaskKey(state.session.intention) === key));
+  const live = matchesActive ? Math.max(0, Math.floor(currentElapsed()) - Math.floor(Number(state.session.accountedSeconds) || 0)) : 0;
+  return recorded + live;
+}
+
+function categoryTone(category) {
+  let value = 0;
+  for (const character of category || '') value = ((value * 31) + character.charCodeAt(0)) >>> 0;
+  return `category-tone-${value % 5}`;
 }
 
 function renderTodos() {
   state.todos ??= [];
   els.todoList.replaceChildren();
   const pending = state.todos.filter(todo => !todo.completed).length;
-  els.todoCount.textContent = `${pending} ${pending === 1 ? 'PENDENTE' : 'PENDENTES'}`;
+  els.todoCount.textContent = `${pending} ${pending === 1 ? 'pendente' : 'pendentes'}`;
   if (state.todos.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'todo-empty';
-    empty.textContent = 'Nenhuma tarefa por enquanto.';
+    empty.textContent = 'Seu dia está livre. Adicione uma tarefa para começar.';
     els.todoList.append(empty);
     return;
   }
@@ -91,41 +147,187 @@ function renderTodos() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = todo.completed;
+    checkbox.disabled = state.session?.taskId === todo.id;
+    if (checkbox.disabled) checkbox.title = 'Encerre o foco antes de concluir esta tarefa';
     checkbox.setAttribute('aria-label', `Concluir ${todo.text}`);
     checkbox.addEventListener('change', async () => {
       todo.completed = checkbox.checked;
+      if (todo.completed && selectedTodoId === todo.id && !state.session) selectedTodoId = null;
       await persist();
       renderTodos();
+      render();
     });
-    const text = document.createElement('span');
-    text.textContent = todo.text;
-    text.title = todo.text;
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.textContent = '×';
-    remove.title = `Excluir ${todo.text}`;
-    remove.setAttribute('aria-label', `Excluir tarefa ${todo.text}`);
-    remove.addEventListener('click', async () => {
-      state.todos = state.todos.filter(item => item.id !== todo.id);
-      await persist();
+    const content = document.createElement('div');
+    content.className = 'todo-content';
+    const titleLine = document.createElement('div');
+    titleLine.className = 'todo-title-line';
+    const name = document.createElement('span');
+    name.className = 'todo-name';
+    name.textContent = todo.text;
+    name.title = todo.text;
+    titleLine.append(name);
+    if (todo.category) {
+      const badge = document.createElement('span');
+      badge.className = `category-badge ${categoryTone(todo.category)}`;
+      badge.textContent = todo.category;
+      titleLine.append(badge);
+    }
+    const time = document.createElement('small');
+    time.className = 'todo-time';
+    time.dataset.todoTimeId = todo.id;
+    const seconds = todoSecondsToday(todo);
+    time.textContent = `${formatTotal(seconds)} hoje`;
+    content.append(titleLine, time);
+
+    const focusButton = document.createElement('button');
+    focusButton.type = 'button';
+    focusButton.className = 'task-focus-button';
+    const isSessionTask = state.session?.taskId === todo.id;
+    const isSelected = !state.session && selectedTodoId === todo.id;
+    focusButton.classList.toggle('selected', isSessionTask || isSelected);
+    focusButton.classList.toggle('completion-label', todo.completed);
+    focusButton.textContent = todo.completed ? 'CONCLUÍDA' : isSessionTask ? '● EM FOCO' : isSelected ? '✓ SELECIONADA' : '▶ INICIAR FOCO';
+    focusButton.disabled = todo.completed || Boolean(state.session && !isSessionTask);
+    focusButton.addEventListener('click', () => {
+      if (state.session || todo.completed) return;
+      selectedTodoId = selectedTodoId === todo.id ? null : todo.id;
+      openTodoMenuId = null;
+      renderTodos();
+      render();
+      document.querySelector('.app-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    const menuButton = document.createElement('button');
+    menuButton.type = 'button';
+    menuButton.className = 'todo-menu-button';
+    menuButton.textContent = '⋮';
+    menuButton.title = 'Ações da tarefa';
+    menuButton.setAttribute('aria-label', `Ações de ${todo.text}`);
+    menuButton.addEventListener('click', event => {
+      event.stopPropagation();
+      openTodoMenuId = openTodoMenuId === todo.id ? null : todo.id;
       renderTodos();
     });
-    row.append(checkbox, text, remove);
+    row.append(checkbox, content, focusButton, menuButton);
+
+    if (openTodoMenuId === todo.id) {
+      const menu = document.createElement('div');
+      menu.className = 'todo-menu';
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.textContent = 'Editar tarefa';
+      edit.addEventListener('click', () => openTaskDialog(todo));
+      const category = document.createElement('button');
+      category.type = 'button';
+      category.textContent = 'Alterar categoria';
+      category.addEventListener('click', () => openTaskDialog(todo, true));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'danger';
+      remove.textContent = 'Excluir';
+      remove.addEventListener('click', async () => {
+        if (state.session?.taskId === todo.id) return;
+        state.todos = state.todos.filter(item => item.id !== todo.id);
+        if (selectedTodoId === todo.id) selectedTodoId = null;
+        openTodoMenuId = null;
+        await persist();
+        renderTodos();
+        render();
+      });
+      if (state.session?.taskId === todo.id) {
+        remove.disabled = true;
+        remove.title = 'Encerre o foco antes de excluir esta tarefa';
+      }
+      menu.append(edit, category, remove);
+      row.append(menu);
+    }
     els.todoList.append(row);
   }
+}
+
+function updateTodoTimes() {
+  for (const element of els.todoList.querySelectorAll('[data-todo-time-id]')) {
+    const todo = state.todos.find(item => item.id === element.dataset.todoTimeId);
+    if (todo) element.textContent = `${formatTotal(todoSecondsToday(todo))} hoje`;
+  }
+}
+
+function updateCategorySuggestions() {
+  els.categorySuggestions.replaceChildren();
+  const categories = [...new Set(state.todos.map(todo => todo.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  for (const category of categories) {
+    const option = document.createElement('option');
+    option.value = category;
+    els.categorySuggestions.append(option);
+  }
+}
+
+function openTaskDialog(todo = null, focusCategory = false) {
+  openTodoMenuId = null;
+  els.taskNameInput.setCustomValidity('');
+  els.taskIdInput.value = todo?.id || '';
+  els.taskNameInput.value = todo?.text || '';
+  els.taskCategoryInput.value = todo?.category || '';
+  els.taskDialogTitle.textContent = todo ? 'Editar tarefa' : 'Adicionar tarefa';
+  updateCategorySuggestions();
+  els.taskDialog.showModal();
+  setTimeout(() => (focusCategory ? els.taskCategoryInput : els.taskNameInput).focus(), 50);
+}
+
+async function saveTask(event) {
+  event.preventDefault();
+  const text = els.taskNameInput.value.trim();
+  if (!text) return els.taskNameInput.focus();
+  const category = els.taskCategoryInput.value.trim() || null;
+  const id = els.taskIdInput.value;
+  const duplicate = state.todos.find(todo => todo.id !== id && normalizeTaskKey(todo.text) === normalizeTaskKey(text));
+  if (duplicate) {
+    els.taskNameInput.setCustomValidity('Já existe uma tarefa com esse nome.');
+    els.taskNameInput.reportValidity();
+    return;
+  }
+  if (id) {
+    const todo = state.todos.find(item => item.id === id);
+    if (!todo) return els.taskDialog.close();
+    const oldKey = normalizeTaskKey(todo.text);
+    for (const entry of state.entries || []) {
+      if (entry.taskId === id || (!entry.taskId && normalizeTaskKey(entry.task) === oldKey)) {
+        entry.taskId = id;
+        entry.task = text;
+      }
+    }
+    todo.text = text;
+    todo.category = category;
+    if (state.session?.taskId === id) state.session.intention = text;
+  } else {
+    state.todos.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, category, completed: false });
+  }
+  els.taskDialog.close();
+  await persist();
+  renderTodos();
+  render();
 }
 
 function render() {
   els.timerText.textContent = formatClock(remainingSeconds);
   document.body.classList.toggle('running', running);
-  els.primary.textContent = running ? 'PAUSAR' : (remainingSeconds < durationSeconds ? 'CONTINUAR' : 'COMEÇAR');
+  const selectedTodo = state.todos?.find(todo => todo.id === selectedTodoId);
+  const activeIntention = state.session?.intention || finishedIntentionName || selectedTodo?.text || '';
+  els.activeTaskLabel.hidden = !activeIntention;
+  els.intention.textContent = activeIntention || 'Escolha uma tarefa ou descreva uma atividade ao começar.';
+  els.focusHeading.textContent = state.session ? (running ? 'Sessão em andamento' : 'Sessão pausada') : selectedTodo ? 'Tarefa selecionada' : 'Pronto para focar?';
+  els.focusSubheading.textContent = state.session ? 'Cada minuto conta. Continue no seu ritmo.' : selectedTodo ? 'Defina o tempo e comece quando estiver pronto.' : 'Escolha uma tarefa, defina o tempo e comece.';
+  els.primary.innerHTML = running ? 'Ⅱ&nbsp;&nbsp; PAUSAR' : (remainingSeconds < durationSeconds ? '▶&nbsp;&nbsp; CONTINUAR' : '▶&nbsp;&nbsp; COMEÇAR');
   els.stop.disabled = !state.session;
+  document.querySelectorAll('[data-minutes]').forEach(button => { button.disabled = Boolean(state.session); });
+  els.customMinutes.disabled = Boolean(state.session);
   els.themeSetting.textContent = state.theme === 'dark' ? 'ESCURO' : 'CLARO';
   els.alwaysOnTopSetting.checked = state.alwaysOnTop;
   updateTotals();
+  updateTodoTimes();
   window.focusAPI.broadcastTimer({
     time: formatClock(remainingSeconds),
-    intention: state.session?.intention || '',
+    intention: state.session?.intention || finishedIntentionName || selectedTodo?.text || '',
     running,
     finished: Boolean(alarmHandle),
     theme: state.theme,
@@ -164,6 +366,7 @@ async function accountProgress(totalElapsed, keepRunning = false) {
     state.entries ??= [];
     state.entries.push({
       task: state.session.intention,
+      taskId: state.session.taskId || null,
       seconds: newSeconds,
       day: (() => {
         const now = new Date();
@@ -176,6 +379,7 @@ async function accountProgress(totalElapsed, keepRunning = false) {
   state.session.startedAt = keepRunning ? Date.now() : null;
   remainingSeconds = Math.max(0, durationSeconds - state.session.elapsedSeconds);
   await persist();
+  renderTodos();
 }
 
 function tick() {
@@ -287,19 +491,26 @@ async function addFixedTag() {
   renderTags();
 }
 
-async function beginSession(intention) {
+async function beginSession(intention, taskId = null) {
   intention = rememberTag(intention);
+  if (!taskId) taskId = state.todos?.find(todo => normalizeTaskKey(todo.text) === normalizeTaskKey(intention))?.id || null;
   running = true;
   remainingSeconds = durationSeconds;
-  state.session = { intention, durationSeconds, elapsedSeconds: 0, accountedSeconds: 0, startedAt: Date.now(), createdAt: Date.now() };
-  els.intention.textContent = intention;
+  selectedTodoId = taskId;
+  state.session = { intention, taskId, durationSeconds, elapsedSeconds: 0, accountedSeconds: 0, startedAt: Date.now(), createdAt: Date.now() };
   await persist();
   startTicking();
+  renderTodos();
   render();
 }
 
 async function toggleTimer() {
   if (!state.session || remainingSeconds >= durationSeconds) {
+    const selectedTodo = state.todos?.find(todo => todo.id === selectedTodoId && !todo.completed);
+    if (selectedTodo) {
+      await beginSession(selectedTodo.text, selectedTodo.id);
+      return;
+    }
     openIntentionDialog();
     return;
   }
@@ -346,8 +557,10 @@ function stopAlarm() {
 
 function acknowledgeFinishedSession() {
   stopAlarm();
+  finishedIntentionName = '';
   remainingSeconds = durationSeconds;
-  els.intention.textContent = 'Defina um tempo para o que importa agora.';
+  selectedTodoId = null;
+  renderTodos();
   render();
 }
 
@@ -360,32 +573,36 @@ async function stopSession() {
     await accountProgress(elapsed, false);
   }
   state.session = null;
+  finishedIntentionName = '';
+  selectedTodoId = null;
   remainingSeconds = durationSeconds;
-  els.intention.textContent = 'Defina um tempo para o que importa agora.';
   await persist();
+  renderTodos();
   render();
 }
 
 async function finishSession() {
   clearInterval(tickHandle);
   const completed = state.session;
+  finishedIntentionName = completed.intention;
   running = false;
   remainingSeconds = 0;
   await accountProgress(completed.durationSeconds, false);
   state.session = null;
+  selectedTodoId = null;
   await persist();
   els.finishedTitle.textContent = `Você investiu ${formatTotal(completed.durationSeconds)}.`;
   els.finishedIntention.textContent = completed.intention;
   els.finishedDialog.showModal();
   startAlarm();
+  renderTodos();
   render();
 }
 
 function chooseDuration(minutes, source = 'preset') {
-  if (running) return;
+  if (state.session) return;
   durationSeconds = minutes * 60;
   remainingSeconds = durationSeconds;
-  state.session = null;
   document.querySelectorAll('[data-minutes]').forEach(button => button.classList.toggle('selected', source === 'preset' && Number(button.dataset.minutes) === minutes));
   els.customMinutes.closest('.custom-time').classList.toggle('selected', source === 'custom');
   if (source === 'preset') els.customMinutes.value = '';
@@ -433,7 +650,7 @@ function showTodayReport() {
 async function restoreSession() {
   if (!state.session) return;
   durationSeconds = Number(state.session.durationSeconds) || 1800;
-  els.intention.textContent = state.session.intention || 'Sessão de foco';
+  selectedTodoId = state.session.taskId || null;
   const elapsed = Number(state.session.elapsedSeconds) || 0;
   state.session.accountedSeconds = Math.min(elapsed, Number(state.session.accountedSeconds) || 0);
   if (state.session.startedAt) {
@@ -468,17 +685,10 @@ els.customMinutes.addEventListener('keydown', event => {
 els.primary.addEventListener('click', toggleTimer);
 els.timerButton.addEventListener('click', toggleTimer);
 els.stop.addEventListener('click', stopSession);
-els.todoForm.addEventListener('submit', async event => {
-  event.preventDefault();
-  const text = els.todoInput.value.trim();
-  if (!text) return els.todoInput.focus();
-  state.todos ??= [];
-  state.todos.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, completed: false });
-  els.todoInput.value = '';
-  await persist();
-  renderTodos();
-  els.todoInput.focus();
-});
+$('#addTodoButton').addEventListener('click', () => openTaskDialog());
+els.taskForm.addEventListener('submit', saveTask);
+els.taskNameInput.addEventListener('input', () => els.taskNameInput.setCustomValidity(''));
+$('#cancelTask').addEventListener('click', () => els.taskDialog.close());
 els.intentionForm.addEventListener('submit', event => {
   event.preventDefault();
   const intention = els.intentionInput.value.trim();
@@ -592,6 +802,12 @@ document.querySelectorAll('.main-resize-zone').forEach(zone => {
     zone.addEventListener('pointerup', finish);
     zone.addEventListener('pointercancel', finish);
   });
+});
+
+document.addEventListener('click', event => {
+  if (!openTodoMenuId || event.target.closest('.todo-menu, .todo-menu-button')) return;
+  openTodoMenuId = null;
+  renderTodos();
 });
 
 (async function init() {

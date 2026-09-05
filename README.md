@@ -18,6 +18,9 @@ O Foco é um aplicativo para Windows que ajuda você a definir uma tarefa, reser
 - Contabilização incremental do tempo realmente focado.
 - Total de hoje e de ontem.
 - Relatório diário agrupado por atividade.
+- Lista de tarefas integrada ao cronômetro, com tempo investido por tarefa.
+- Categorias opcionais, edição e ações organizadas por tarefa.
+- Resumo de hoje, ontem, semana atual e sequência de foco.
 - Relógio flutuante redimensionável e sempre visível.
 - Fundo ajustável de opaco a totalmente transparente.
 - Temas claro e escuro.

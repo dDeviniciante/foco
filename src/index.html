@@ -11,7 +11,7 @@
       <header class="titlebar">
         <div class="brand drag-region">
           <span class="focus-dot" aria-hidden="true"></span>
-          <span>FOCO</span>
+          <div><strong>FOCO</strong><small>Menos distração. Mais progresso.</small></div>
         </div>
         <div class="window-actions">
           <button id="settingsButton" title="Opções" aria-label="Abrir opções">⚙</button>
@@ -19,54 +19,40 @@
           <button id="closeButton" title="Fechar" aria-label="Fechar">×</button>
         </div>
       </header>
-
-      <section class="timer-panel">
-        <div class="timer-row">
-          <button class="timer-display" id="timerButton" aria-label="Iniciar ou pausar">
-            <span id="timerText">30:00</span>
-          </button>
-          <button class="fullscreen-inline" id="fullscreenModeButton" title="Abrir tela de foco" aria-label="Abrir tela de foco">+</button>
-          <button class="float-inline" id="floatModeButton" title="Tornar relógio flutuante" aria-label="Tornar relógio flutuante">↗</button>
-          <div class="timer-actions">
-            <button class="stop-action" id="stopButton" disabled>STOP</button>
-            <button class="primary-action" id="primaryButton">COMEÇAR</button>
+      <div class="app-content">
+        <section class="focus-card">
+          <div class="mode-actions">
+            <button id="fullscreenModeButton" title="Abrir tela de foco" aria-label="Abrir tela de foco">＋</button>
+            <button id="floatModeButton" title="Tornar relógio flutuante" aria-label="Tornar relógio flutuante">↗</button>
           </div>
-        </div>
-        <p class="intention" id="intentionText">Defina um tempo para o que importa agora.</p>
-      </section>
-
-      <section class="expanded" id="expandedPanel">
-        <div class="duration-picker" aria-label="Duração do foco">
-          <button data-minutes="25">25</button>
-          <button data-minutes="30" class="selected">30</button>
-          <button data-minutes="45">45</button>
-          <button data-minutes="60">60</button>
-          <label class="custom-time">
-            <input id="customMinutes" inputmode="numeric" maxlength="3" placeholder="—" aria-label="Minutos personalizados" />
-            <span>MIN</span>
-          </label>
-        </div>
-        <div class="daily-summary">
-          <div><span>HOJE</span><strong id="todayTotal">0 min</strong></div>
-          <div class="rule"></div>
-          <div><span>ONTEM</span><strong id="yesterdayTotal">0 min</strong></div>
-        </div>
-        <button class="report-toggle" id="reportButton">
-          <span>ATIVIDADES DE HOJE</span>
-          <strong>VER RELATÓRIO</strong>
-        </button>
-        <section class="todo-section" aria-labelledby="todoTitle">
-          <div class="todo-heading">
-            <span id="todoTitle">TO-DO LIST</span>
-            <strong id="todoCount">0 PENDENTES</strong>
+          <div class="focus-copy"><strong id="focusHeading">Pronto para focar?</strong><span id="focusSubheading">Escolha uma tarefa, defina o tempo e comece.</span></div>
+          <p class="active-task-label" id="activeTaskLabel" hidden>FOCANDO EM</p>
+          <p class="intention" id="intentionText">Escolha uma tarefa ou descreva uma atividade ao começar.</p>
+          <button class="timer-display" id="timerButton" aria-label="Iniciar ou pausar"><span id="timerText">30:00</span></button>
+          <div class="duration-picker" aria-label="Duração do foco">
+            <button data-minutes="25">25</button><button data-minutes="30" class="selected">30</button><button data-minutes="45">45</button><button data-minutes="60">60</button>
+            <label class="custom-time"><input id="customMinutes" inputmode="numeric" maxlength="3" placeholder="Personalizado" aria-label="Minutos personalizados" /><span>MIN</span></label>
           </div>
-          <form class="todo-form" id="todoForm">
-            <input id="todoInput" maxlength="120" autocomplete="off" placeholder="Adicionar uma tarefa..." aria-label="Nova tarefa" />
-            <button type="submit" aria-label="Adicionar tarefa">+</button>
-          </form>
+          <div class="timer-actions"><button class="stop-action" id="stopButton" disabled>ENCERRAR</button><button class="primary-action focus-primary" id="primaryButton">▶&nbsp;&nbsp; COMEÇAR</button></div>
+        </section>
+        <section class="summary-card">
+          <div class="section-heading"><h2><span class="section-icon">▥</span> Resumo do dia</h2><button class="report-link" id="reportButton">Ver relatório&nbsp; →</button></div>
+          <div class="summary-grid">
+            <article><span>◷ &nbsp; Hoje</span><strong id="todayTotal">0 min</strong><small id="todayComparison">Comece seu primeiro foco</small></article>
+            <article><span>▥ &nbsp; Ontem</span><strong id="yesterdayTotal">0 min</strong><small>Seu foco no dia anterior</small></article>
+            <article><span>□ &nbsp; Esta semana</span><strong id="weekTotal">0 min</strong><small>Tempo acumulado na semana</small></article>
+            <article><span>♨ &nbsp; Sequência</span><strong id="streakTotal">0 dias</strong><small id="streakMessage">Um dia de cada vez</small></article>
+          </div>
+        </section>
+        <section class="tasks-card" aria-labelledby="todoTitle">
+          <div class="section-heading tasks-heading">
+            <div class="tasks-title"><h2 id="todoTitle">▢ &nbsp; Tarefas de hoje</h2><span id="todoCount">0 pendentes</span></div>
+            <button class="add-task-button" id="addTodoButton">＋ &nbsp;Adicionar tarefa</button>
+          </div>
           <div class="todo-list" id="todoList"></div>
         </section>
-      </section>
+        <footer>FOCO &nbsp;•&nbsp; TEMPO BEM INVESTIDO SEMPRE VOLTA</footer>
+      </div>
     </main>
 
     <dialog id="intentionDialog">
@@ -93,6 +79,23 @@
         <div class="dialog-actions">
           <button type="button" id="cancelIntention" class="text-button">CANCELAR</button>
           <button value="default" id="confirmIntention" class="primary-action">COMEÇAR FOCO</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="taskDialog" class="task-dialog">
+      <form id="taskForm">
+        <input id="taskIdInput" type="hidden" />
+        <span class="eyebrow">ORGANIZAR O DIA</span>
+        <h1 id="taskDialogTitle">Adicionar tarefa</h1>
+        <label class="field-label" for="taskNameInput">NOME</label>
+        <input id="taskNameInput" maxlength="120" autocomplete="off" placeholder="Ex.: Estudar Java" required />
+        <label class="field-label" for="taskCategoryInput">CATEGORIA <small>OPCIONAL</small></label>
+        <input id="taskCategoryInput" maxlength="40" autocomplete="off" list="categorySuggestions" placeholder="Ex.: Estudos" />
+        <datalist id="categorySuggestions"></datalist>
+        <div class="dialog-actions">
+          <button type="button" id="cancelTask" class="text-button">CANCELAR</button>
+          <button type="submit" class="primary-action">SALVAR TAREFA</button>
         </div>
       </form>
     </dialog>
