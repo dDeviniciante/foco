@@ -49,3 +49,11 @@ test('keeps fixed tags and removes temporary tags from a previous day', () => {
   assert.deepEqual(state.temporaryTags, []);
   assert.equal(state.temporaryTagsDay, localDayKey());
 });
+
+test('keeps valid to-do items when normalizing saved state', () => {
+  const state = normalizeState({ todos: [
+    { id: '1', text: '  Revisar matemática  ', completed: true },
+    { id: '2', text: '', completed: false }
+  ] });
+  assert.deepEqual(state.todos, [{ id: '1', text: 'Revisar matemática', completed: true }]);
+});

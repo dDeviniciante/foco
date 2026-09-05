@@ -55,6 +55,17 @@
           <span>ATIVIDADES DE HOJE</span>
           <strong>VER RELATÓRIO</strong>
         </button>
+        <section class="todo-section" aria-labelledby="todoTitle">
+          <div class="todo-heading">
+            <span id="todoTitle">TO-DO LIST</span>
+            <strong id="todoCount">0 PENDENTES</strong>
+          </div>
+          <form class="todo-form" id="todoForm">
+            <input id="todoInput" maxlength="120" autocomplete="off" placeholder="Adicionar uma tarefa..." aria-label="Nova tarefa" />
+            <button type="submit" aria-label="Adicionar tarefa">+</button>
+          </form>
+          <div class="todo-list" id="todoList"></div>
+        </section>
       </section>
     </main>
 

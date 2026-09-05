@@ -23,6 +23,7 @@ function createEmptyState() {
     fixedTags: [],
     temporaryTags: [],
     temporaryTagsDay: localDayKey(),
+    todos: [],
     floatingOpacity: 0.92,
     session: null
   };
@@ -39,6 +40,9 @@ function normalizeState(value) {
     fixedTags: Array.isArray(value.fixedTags) ? value.fixedTags : [],
     temporaryTags: value.temporaryTagsDay === localDayKey() && Array.isArray(value.temporaryTags) ? value.temporaryTags : [],
     temporaryTagsDay: localDayKey(),
+    todos: Array.isArray(value.todos) ? value.todos
+      .filter(todo => todo && typeof todo === 'object' && String(todo.text || '').trim())
+      .map(todo => ({ id: String(todo.id || ''), text: String(todo.text).trim().slice(0, 120), completed: todo.completed === true })) : [],
     floatingOpacity: Math.max(0, Math.min(1, Number.isFinite(Number(value.floatingOpacity)) ? Number(value.floatingOpacity) : 0.92)),
     session: value.session && typeof value.session === 'object' ? value.session : null
   };

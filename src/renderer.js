@@ -33,7 +33,8 @@ const els = {
   tagSection: $('#tagSection'), fixedTagList: $('#fixedTagList'), temporaryTagList: $('#temporaryTagList'),
   temporaryTagGroup: $('#temporaryTagGroup'), addTagForm: $('#addTagForm'), fixedTagInput: $('#fixedTagInput'), settingsDialog: $('#settingsDialog'),
   opacityRange: $('#opacityRange'), opacityValue: $('#opacityValue'), themeSetting: $('#themeSetting'),
-  alwaysOnTopSetting: $('#alwaysOnTopSetting')
+  alwaysOnTopSetting: $('#alwaysOnTopSetting'), todoForm: $('#todoForm'), todoInput: $('#todoInput'),
+  todoList: $('#todoList'), todoCount: $('#todoCount')
 };
 
 let state;
@@ -69,6 +70,49 @@ function updateTotals() {
   const totals = totalsForDisplay(state, new Date());
   els.today.textContent = formatTotal(totals.today);
   els.yesterday.textContent = formatTotal(totals.yesterday);
+}
+
+function renderTodos() {
+  state.todos ??= [];
+  els.todoList.replaceChildren();
+  const pending = state.todos.filter(todo => !todo.completed).length;
+  els.todoCount.textContent = `${pending} ${pending === 1 ? 'PENDENTE' : 'PENDENTES'}`;
+  if (state.todos.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'todo-empty';
+    empty.textContent = 'Nenhuma tarefa por enquanto.';
+    els.todoList.append(empty);
+    return;
+  }
+  for (const todo of state.todos) {
+    const row = document.createElement('div');
+    row.className = 'todo-item';
+    row.classList.toggle('completed', todo.completed);
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = todo.completed;
+    checkbox.setAttribute('aria-label', `Concluir ${todo.text}`);
+    checkbox.addEventListener('change', async () => {
+      todo.completed = checkbox.checked;
+      await persist();
+      renderTodos();
+    });
+    const text = document.createElement('span');
+    text.textContent = todo.text;
+    text.title = todo.text;
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '×';
+    remove.title = `Excluir ${todo.text}`;
+    remove.setAttribute('aria-label', `Excluir tarefa ${todo.text}`);
+    remove.addEventListener('click', async () => {
+      state.todos = state.todos.filter(item => item.id !== todo.id);
+      await persist();
+      renderTodos();
+    });
+    row.append(checkbox, text, remove);
+    els.todoList.append(row);
+  }
 }
 
 function render() {
@@ -424,6 +468,17 @@ els.customMinutes.addEventListener('keydown', event => {
 els.primary.addEventListener('click', toggleTimer);
 els.timerButton.addEventListener('click', toggleTimer);
 els.stop.addEventListener('click', stopSession);
+els.todoForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const text = els.todoInput.value.trim();
+  if (!text) return els.todoInput.focus();
+  state.todos ??= [];
+  state.todos.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, text, completed: false });
+  els.todoInput.value = '';
+  await persist();
+  renderTodos();
+  els.todoInput.focus();
+});
 els.intentionForm.addEventListener('submit', event => {
   event.preventDefault();
   const intention = els.intentionInput.value.trim();
@@ -544,5 +599,6 @@ document.querySelectorAll('.main-resize-zone').forEach(zone => {
   document.documentElement.dataset.theme = state.theme;
   await window.focusAPI.setAlwaysOnTop(state.alwaysOnTop);
   await restoreSession();
+  renderTodos();
   render();
 })();

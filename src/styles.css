@@ -53,6 +53,8 @@ button { color: inherit; }
 .app-shell {
   container-type: inline-size;
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: calc(100% - 12px);
   height: calc(100% - 12px);
   margin: 6px;
@@ -159,7 +161,7 @@ button { color: inherit; }
   white-space: nowrap;
 }
 
-.expanded { border-top: 1px solid var(--line); }
+.expanded { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); overflow-y: auto; }
 .duration-picker { display: grid; grid-template-columns: repeat(4, 1fr) 1.35fr; padding: 12px 16px; gap: 6px; }
 .duration-picker > button, .custom-time {
   height: 32px;
@@ -209,6 +211,21 @@ button { color: inherit; }
   cursor: pointer;
 }
 .report-toggle strong { color: var(--accent); font-size: 8px; }
+.todo-section { flex: 1 1 auto; min-height: 58px; display: flex; flex-direction: column; padding: 12px 18px 14px; border-top: 1px solid var(--line); overflow: hidden; }
+.todo-heading { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--muted); font-size: 8px; font-weight: 700; letter-spacing: .16em; }
+.todo-heading strong { color: var(--accent); font-size: 8px; }
+.todo-form { flex: 0 0 auto; display: grid; grid-template-columns: 1fr 30px; gap: 6px; margin-bottom: 8px; }
+.todo-form input { min-width: 0; height: 30px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; outline: 0; background: color-mix(in srgb, var(--surface) 90%, transparent); color: var(--ink); font-size: 11px; }
+.todo-form input:focus { border-color: var(--accent); }
+.todo-form button { width: 30px; height: 30px; padding: 0; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: 19px; line-height: 1; cursor: pointer; }
+.todo-list { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; }
+.todo-item { display: grid; grid-template-columns: 16px minmax(0, 1fr) 24px; align-items: center; gap: 8px; min-height: 32px; border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
+.todo-item input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.todo-item span { overflow: hidden; font-family: Georgia, serif; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.todo-item button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 16px; cursor: pointer; }
+.todo-item button:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
+.todo-item.completed span { color: var(--muted); text-decoration: line-through; opacity: .7; }
+.todo-empty { margin: 8px 0; color: var(--muted); font-family: Georgia, serif; font-size: 11px; font-style: italic; }
 
 dialog {
   width: 294px;
